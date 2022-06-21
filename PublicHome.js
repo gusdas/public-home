@@ -7,7 +7,7 @@ var map = new naver.maps.Map("map", {
 var infoWindow = new naver.maps.InfoWindow({
   anchorSkew: true,
 });
-
+const targetInfoList = [];
 map.setCursor("pointer");
 
 function searchCoordinateToAddress(latlng) {
@@ -92,17 +92,21 @@ function searchAddressToCoordinate(address) {
       );
 
       map.setCenter(point);
-      infoWindow.open(map, point);
+
+      //   infoWindows.push(infoWindow.open(map, point))
+      const targetInfo = { address, lng: item.x, lat: item.y };
+      targetInfoList.push(targetInfo);
     }
   );
 }
 
 function initGeocoder() {
-  map.addListener("click", function (e) {
-    searchCoordinateToAddress(e.coord);
-  });
+  //   map.addListener("click", function (e) {
+  //     searchCoordinateToAddress(e.coord);
+  //   });
 
   $("#address").on("keydown", function (e) {
+    // e.preventDefault();
     var keyCode = e.which;
 
     if (keyCode === 13) {
@@ -115,9 +119,10 @@ function initGeocoder() {
     e.preventDefault();
 
     searchAddressToCoordinate($("#address").val());
+    console.log(targetInfoList);
   });
 
-  searchAddressToCoordinate("정자동 178-1");
+  //   searchAddressToCoordinate("정자동 178-1");
 }
 
 function makeAddress(item) {
