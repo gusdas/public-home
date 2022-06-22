@@ -2050,6 +2050,16 @@ const resultList = houseNameList.map((e) => {
 
 // console.log(resultList)
 for (const suplyObj of suplyList) {
+  const houseId = suplyObj.houseSn;
+  const houseObj = houseList.filter(
+    (houseInfo) => houseInfo.houseSn === houseId
+  )[0];
+  const address = houseObj.fullAdres;
+  const houseNameObj = resultList.filter(
+    (houseInfo) => houseInfo.houseSn === houseId
+  )[0];
+  houseNameObj.address = address;
+
   if (
     suplyObj.styleNm.includes("고령") ||
     suplyObj.styleNm.includes("대학") ||
@@ -2058,23 +2068,10 @@ for (const suplyObj of suplyList) {
   ) {
     continue;
   }
-  const houseId = suplyObj.houseSn;
-  const houseObj = houseList.filter(
-    (houseInfo) => houseInfo.houseSn === houseId
-  )[0];
-  const houseNameObj = resultList.filter(
-    (houseInfo) => houseInfo.houseSn === houseId
-  )[0];
 
-  const address = houseObj.fullAdres;
-  // const name = houseNameObj.name;
-
-  // console.log(address)
-  // address;
-  // name;
   //   (월세*0.5)*200+보증금
   //  월세-((계산된 보증금-원래보증금)*6%/12)
-  houseNameObj.address = address;
+
   houseNameObj.sells.push({
     m2: Number(suplyObj.prvuseAr),
     Classes: suplyObj.styleNm,
