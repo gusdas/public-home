@@ -1,58 +1,33 @@
+const homeInfoList = [
+  {
+    name: "강남센트럴아이파크(개나리4차)",
+    address: "서울특별시 강남구 역삼동 712-3",
+  },
+  {
+    name: "건대프라하임3차(하양동 94-9)",
+    address: "서울특별시 광진구 화양동 94-9",
+  },
+  {
+    name: "다온타워(신림동 1420-6)",
+    address: "서울특별시 관악구 신림동 1420-6",
+  },
+];
+
+const markers = [];
+const infoWindows = [];
+
 var map = new naver.maps.Map("map", {
   center: new naver.maps.LatLng(37.3595316, 127.1052133),
   zoom: 15,
-  mapTypeControl: true,
 });
 
-var infoWindow = new naver.maps.InfoWindow({
-  anchorSkew: true,
-});
-const targetInfoList = [];
+// var infoWindow = new naver.maps.InfoWindow({
+//   anchorSkew: true,
+// });
+
 map.setCursor("pointer");
 
-function searchCoordinateToAddress(latlng) {
-  infoWindow.close();
-
-  naver.maps.Service.reverseGeocode(
-    {
-      coords: latlng,
-      orders: [
-        naver.maps.Service.OrderType.ADDR,
-        naver.maps.Service.OrderType.ROAD_ADDR,
-      ].join(","),
-    },
-    function (status, response) {
-      if (status === naver.maps.Service.Status.ERROR) {
-        return alert("Something Wrong!");
-      }
-
-      var items = response.v2.results,
-        address = "",
-        htmlAddresses = [];
-
-      for (var i = 0, ii = items.length, item, addrType; i < ii; i++) {
-        item = items[i];
-        address = makeAddress(item) || "";
-        addrType = item.name === "roadaddr" ? "[도로명 주소]" : "[지번 주소]";
-
-        htmlAddresses.push(i + 1 + ". " + addrType + " " + address);
-      }
-
-      infoWindow.setContent(
-        [
-          '<div style="padding:10px;min-width:200px;line-height:150%;">',
-          '<h4 style="margin-top:5px;">검색 좌표</h4><br />',
-          htmlAddresses.join("<br />"),
-          "</div>",
-        ].join("\n")
-      );
-
-      infoWindow.open(map, latlng);
-    }
-  );
-}
-
-function searchAddressToCoordinate(address) {
+function searchAddressToCoordinate(address, idx) {
   naver.maps.Service.geocode(
     {
       query: address,
@@ -82,125 +57,109 @@ function searchAddressToCoordinate(address) {
         htmlAddresses.push("[영문명 주소] " + item.englishAddress);
       }
 
-      infoWindow.setContent(
-        [
-          '<div style="padding:10px;min-width:200px;line-height:150%;">',
-          '<h4 style="margin-top:5px;">검색 주소 : ' + address + "</h4><br />",
-          htmlAddresses.join("<br />"),
-          "</div>",
-        ].join("\n")
-      );
+      //   infoWindow.setContent(
+      //     [
+      //       '<div style="padding:10px;min-width:200px;line-height:150%;">',
+      //       '<h4 style="margin-top:5px;">검색 주소 : ' + address + "</h4><br />",
+      //       htmlAddresses.join("<br />"),
+      //       "</div>",
+      //     ].join("\n")
+      //   );
 
       map.setCenter(point);
 
       //   infoWindows.push(infoWindow.open(map, point))
-      const targetInfo = { address, lng: item.x, lat: item.y };
-      targetInfoList.push(targetInfo);
+      homeInfoList[idx].lng = item.x;
+      homeInfoList[idx].lat = item.y;
+
+      var position = new naver.maps.LatLng(item.y, item.x);
+
+      var marker = new naver.maps.Marker({
+        map: map,
+        position: position,
+      });
+
+      var infoWindow = new naver.maps.InfoWindow({
+        content:
+          '<div style="width:150px;text-align:center;padding:10px;"> 단지이름 : <b>"' +
+          homeInfoList[idx].name +
+          '"</b>.</div>',
+      });
+
+      markers.push(marker);
+      //   console.log(markers);
+      infoWindows.push(infoWindow);
     }
   );
 }
 
-function initGeocoder() {
-  //   map.addListener("click", function (e) {
-  //     searchCoordinateToAddress(e.coord);
-  //   });
+function updateMarkers(map, markers) {
+  var mapBounds = map.getBounds();
+  var marker, position;
+  for (var i = 0; i < markers.length; i++) {
+    marker = markers[i];
+    position = marker.getPosition();
 
-  $("#address").on("keydown", function (e) {
-    // e.preventDefault();
-    var keyCode = e.which;
-
-    if (keyCode === 13) {
-      // Enter Key
-      searchAddressToCoordinate($("#address").val());
+    if (mapBounds.hasLatLng(position)) {
+      showMarker(map, marker);
+    } else {
+      hideMarker(map, marker);
     }
-  });
-
-  $("#submit").on("click", function (e) {
-    e.preventDefault();
-
-    searchAddressToCoordinate($("#address").val());
-    console.log(targetInfoList);
-  });
-
-  //   searchAddressToCoordinate("정자동 178-1");
+  }
 }
 
-function makeAddress(item) {
-  if (!item) {
-    return;
-  }
+function showMarker(map, marker) {
+  if (marker.setMap()) return;
+  marker.setMap(map);
+}
 
-  var name = item.name,
-    region = item.region,
-    land = item.land,
-    isRoadAddress = name === "roadaddr";
+function hideMarker(map, marker) {
+  if (!marker.setMap()) return;
+  marker.setMap(null);
+}
+// 해당 마커의 인덱스를 seq라는 클로저 변수로 저장하는 이벤트 핸들러를 반환합니다.
+// function getClickHandler(seq) {
+//   return function (e) {
+//     var marker = markers[seq],
+//       infoWindow = infoWindows[seq];
 
-  var sido = "",
-    sigugun = "",
-    dongmyun = "",
-    ri = "",
-    rest = "";
+//     if (infoWindow.getMap()) {
+//       infoWindow.close();
+//     } else {
+//       infoWindow.open(map, marker);
+//     }
+//   };
+// }
 
-  if (hasArea(region.area1)) {
-    sido = region.area1.name;
-  }
-
-  if (hasArea(region.area2)) {
-    sigugun = region.area2.name;
-  }
-
-  if (hasArea(region.area3)) {
-    dongmyun = region.area3.name;
-  }
-
-  if (hasArea(region.area4)) {
-    ri = region.area4.name;
-  }
-
-  if (land) {
-    if (hasData(land.number1)) {
-      if (hasData(land.type) && land.type === "2") {
-        rest += "산";
-      }
-
-      rest += land.number1;
-
-      if (hasData(land.number2)) {
-        rest += "-" + land.number2;
-      }
-    }
-
-    if (isRoadAddress === true) {
-      if (checkLastString(dongmyun, "면")) {
-        ri = land.name;
+function addListenerInfoWindows(markers) {
+  console.log("info");
+  console.log(markers);
+  for (var i = 0; i < markers.length; i++) {
+    naver.maps.Event.addListener(markers[i], "click", function (e) {
+      if (infoWindows[i].getMap()) {
+        infoWindows[i].close();
       } else {
-        dongmyun = land.name;
-        ri = "";
+        infoWindows[i].open(map, markers[i]);
       }
-
-      if (hasAddition(land.addition0)) {
-        rest += " " + land.addition0.value;
-      }
-    }
+    });
   }
-
-  return [sido, sigugun, dongmyun, ri, rest].join(" ");
 }
 
-function hasArea(area) {
-  return !!(area && area.name && area.name !== "");
-}
+homeInfoList.forEach(({ name, address }, idx) => {
+  searchAddressToCoordinate(address, idx);
+});
+console.log("global");
+console.log(markers);
+// console.log(infoWindows);
+addListenerInfoWindows(markers);
 
-function hasData(data) {
-  return !!(data && data !== "");
-}
+naver.maps.Event.addListener(map, "idle", function () {
+  console.log("idle");
+  console.log(markers);
+  updateMarkers(map, markers);
+});
 
-function checkLastString(word, lastString) {
-  return new RegExp(lastString + "$").test(word);
-}
-
-function hasAddition(addition) {
-  return !!(addition && addition.value);
-}
-
-naver.maps.onJSContentLoaded = initGeocoder;
+//   markers.forEach((marker, idx) => {
+//     console.log("test");
+//     naver.maps.Event.addListener(marker, "click", getClickHandler(idx));
+//   });
