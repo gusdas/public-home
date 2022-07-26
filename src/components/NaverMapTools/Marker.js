@@ -1,23 +1,34 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import ReactDOMServer from "react-dom/server";
 import styled from "styled-components";
 import * as NAVER from "../../util/naverMapHelper";
 import { useHomesState, useHomesDispatch } from "./../../provider/HomeContext";
 
-export function InfoWindowContent({ homeInfo }) {
+export function InfoWindowContent({ data, homeInfo }) {
   const sells = homeInfo.sells;
+  const [visible, setVisible] = useState(true);
   return (
-    <InfoWindowDiv>
+    <InfoWindowDiv visible={visible}>
+      <Header>
+        <h3>
+          [{homeInfo.gov}] {homeInfo.name}
+        </h3>
+        <CloseButton
+          onClick={() => {
+            console.log("hihi");
+            setVisible(!visible);
+          }}
+        >
+          X
+        </CloseButton>
+      </Header>
+      <p>임대조건(2,3순위 청년 기준, 보증금 최대전환 시)</p>
       <InfoWindowScroll>
         <div>
-          <span class="notranslate">
-            <h3>
-              [{homeInfo.gov}] {homeInfo.name}
-            </h3>
-            <p>임대조건(2,3순위 청년 기준, 보증금 최대전환 시)</p>
-            {sells.map((sell) => {
+          <span className="notranslate">
+            {sells.map((sell, idx) => {
               return (
-                <ul>
+                <ul key={idx}>
                   <li>주택정보: {sell.classes}</li>
                   <li>보증금: {sell.totalPrice}</li>
                   <li>임대료: {sell.monthPay}</li>
@@ -44,16 +55,49 @@ export default function Marker() {
 
   NAVER.createMarker(data, state.map.data, (props) => {
     const htmlString = ReactDOMServer.renderToStaticMarkup(
-      <InfoWindowContent homeInfo={props}></InfoWindowContent>
+      <InfoWindowContent
+        data={state.map.data}
+        homeInfo={props}
+      ></InfoWindowContent>
     );
     return htmlString;
   });
 }
+const Header = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+const CloseButton = styled.button`
+  background: none;
+  outline: none;
+  border: none;
+  opacity: 1;
+  color: #16933a;
+  font-weight: bold;
+  font-size: 20px;
 
+  &:hover {
+    opacity: 0.7;
+  }
+  &:before,
+  &:after {
+    background-color: #333;
+  }
+
+  &:before {
+    transform: rotate(45deg);
+  }
+  &:after {
+    transform: rotate(-45deg);
+  }
+`;
 const InfoWindowDiv = styled.div`
   width: 350px;
   text-align: left;
   padding: 10px;
+
+  ${(props) => (props.visible ? "width: 350px" : "width: 0px")}
 `;
 
 const InfoWindowScroll = styled.div`
